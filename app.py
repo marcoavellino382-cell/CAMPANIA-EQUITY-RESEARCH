@@ -90,3 +90,12 @@ st.dataframe(df_fondamentali.set_index('Ticker'), use_container_width=True)
 # Bottone di download dei dati in CSV direttamente dalla dashboard
 csv = df_fondamentali.to_csv(index=False).encode('utf-8')
 st.download_button("📥 Scarica Report in CSV", data=csv, file_name="report_finanziario_campania.csv", mime="text/csv")
+
+# Scarica l'indice di riferimento insieme ai titoli
+benchmark = yf.download('FTSEMIB.MI', period='2y')['Close']
+rendimenti_benchmark = benchmark.pct_change().dropna()
+
+# Calcolo del Beta per ciascun titolo (da inserire nel loop dei ticker)
+varianza_mercato = rendimenti_benchmark.var()
+covarianza = rendimenti_titolo.cov(rendimenti_benchmark)
+beta = covarianza / varianza_mercato
