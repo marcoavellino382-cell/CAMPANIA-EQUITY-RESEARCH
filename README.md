@@ -37,4 +37,4 @@ L'obiettivo di questo applicativo è monitorare in tempo reale le performance qu
 ---
 ## 🧑‍💻 Autore
 * **Marco Avellino** - Financial Analyst* presso Starting Finance Club Suor Orsola 
-* LinkedIn: [Il Tuo Profilo LinkedIn](https://linkedin.com)
+* LinkedIn: [Il Tuo Profilo LinkedIn](https://linkedin.com/in/marco-avellino-1a0918411)
