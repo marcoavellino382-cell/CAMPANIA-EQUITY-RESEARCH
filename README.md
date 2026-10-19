@@ -4,7 +4,7 @@ Benvenuto nel repository ufficiale dell'**Osservatorio Finanziario delle Aziende
 
 L'obiettivo di questo applicativo è monitorare in tempo reale le performance quantitative e i multipli fondamentali delle principali aziende quotate con un forte radicamento industriale e operativo nella Regione Campania.
 
-🚀 **[CLICCA QUI PER APRIRE LA DASHBOARD INTERATTIVA]([)](https://campania-equity-research.streamlit.app/)**
+🚀 **[CLICCA QUI PER APRIRE LA DASHBOARD INTERATTIVA](https://campania-equity-research.streamlit.app/)**
 
 ---
 
