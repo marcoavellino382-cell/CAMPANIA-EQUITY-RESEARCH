@@ -3,50 +3,56 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 
-# Configurazione pagina
+# Configurazione della pagina
 st.set_page_config(page_title="Campania Finance Dashboard", page_icon="📊", layout="wide")
 
 st.title("📊 Osservatorio Finanziario: Aziende della Campania")
 st.markdown("Analisi quantitativa in tempo reale per lo **Starting Finance Club**.")
 
-# 1. Watchlist Aziende
+# 1. Watchlist Aziende Campane con Ticker ad alta liquidità
 aziende_campane = {
     'ZEST.MI': 'Zest (Ex Digital Magics)',
     'DHH.MI': 'DHH',
     'CLE.MI': 'Class Editori',
-    'GIB.MI': 'Gibus'
+    'SCK.MI': 'Sciuker Frames'
 }
 tickers = list(aziende_campane.keys())
 
-# 2. Funzione unica per scaricare i dati storici (Molto più stabile su Cloud)
-@st.cache_data(ttl=1800)
+# 2. Funzione di scaricamento ottimizzata per la struttura MultiIndex
+@st.cache_data(ttl=600)  # Ridotto il tempo di cache per evitare blocchi temporanei
 def load_all_market_data(tickers):
-    # Scarichiamo la serie storica degli ultimi 2 anni
-    df_storico = yf.download(tickers, period='2y')['Close']
+    # Scarichiamo i dati esplicitando l'argomento group_by per controllare la struttura
+    df_raw = yf.download(tickers, period='2y', group_by='ticker')
     
-    # Gestione multi-index per yfinance
-    if isinstance(df_storico.columns, pd.MultiIndex):
-        df_storico.columns = df_storico.columns.get_level_values(1)
-    
-    # Pulizia dati storici da eventuali buchi giornalieri
-    df_storico = df_storico.ffill().bfill()
-    
-    # Estraiamo l'ultimo prezzo disponibile in assoluto (ultima riga del dataset)
-    ultimi_prezzi = df_storico.iloc[-1]
-    
-    # Calcolo del rendimento cumulativo degli ultimi 2 anni
-    rendimenti_2a = ((df_storico.iloc[-1] / df_storico.iloc[0]) - 1) * 100
-    
-    # Calcolo della volatilità annualizzata
-    volatilita = df_storico.pct_change().dropna().std() * np.sqrt(252) * 100
-    
-    # Costruiamo la tabella finale usando solo dati matematici estratti dai prezzi storici
     rows = []
+    df_prezzi_chiusura = pd.DataFrame()
+    
     for t in tickers:
-        prezzo_attuale = ultimi_prezzi.get(t, 0.0)
-        rend_titolo = rendimenti_2a.get(t, 0.0)
-        vol_titolo = volatilita.get(t, 0.0)
-        
+        try:
+            # Estrazione sicura della serie storiche di chiusura dal MultiIndex di yfinance
+            if t in df_raw.columns.get_level_values(0):
+                serie_titolo = df_raw[t]['Close'].dropna()
+            else:
+                # Fallback se yfinance restituisce un formato piatto flat
+                serie_titolo = df_raw['Close'][t].dropna() if t in df_raw['Close'].columns else pd.Series()
+            
+            if not serie_titolo.empty:
+                # Applichiamo una pulizia immediata sulla serie del singolo titolo
+                serie_titolo = serie_titolo.ffill().bfill()
+                
+                # Salviamo la serie pulita nel dataframe per i grafici
+                df_prezzi_chiusura[t] = serie_titolo
+                
+                prezzo_attuale = float(serie_titolo.iloc[-1])
+                prezzo_iniziale = float(serie_titolo.iloc[0])
+                
+                rend_titolo = ((prezzo_attuale / prezzo_iniziale) - 1) * 100
+                vol_titolo = serie_titolo.pct_change().dropna().std() * np.sqrt(252) * 100
+            else:
+                prezzo_attuale, rend_titolo, vol_titolo = 0.0, 0.0, 0.0
+        except Exception:
+            prezzo_attuale, rend_titolo, vol_titolo = 0.0, 0.0, 0.0
+            
         rows.append({
             'Ticker': t,
             'Azienda': aziende_campane[t],
@@ -55,10 +61,10 @@ def load_all_market_data(tickers):
             'Volatilità Ann. (%)': round(vol_titolo, 2)
         })
         
-    return pd.DataFrame(rows), df_storico
+    return pd.DataFrame(rows), df_prezzi_chiusura
 
-# Caricamento dei dati sicuri
-with st.spinner("Estrazione e calcolo metriche quantitative in corso..."):
+# Caricamento dei dati puliti
+with st.spinner("Estrazione e calcolo delle metriche quantitative di Piazza Affari..."):
     df_fondamentali, df_prezzi = load_all_market_data(tickers)
 
 # --- SEZIONE 1: KPIs DI SINTESI ---
@@ -69,7 +75,7 @@ for i, row in df_fondamentali.iterrows():
         st.metric(
             label=row['Azienda'], 
             value=f"€ {row['Prezzo Ultimo (€)']:.2f}", 
-            delta=f"Rendimento: {row['Rendimento 2A (%)']}%"
+            delta=f"Rendimento: {row['Rendimento 2A (%)']:.2f}%"
         )
 
 st.divider()
@@ -80,18 +86,22 @@ col_left, col_right = st.columns(2)
 with col_left:
     st.subheader("📈 Trend Storico Normalizzato (Base 100)")
     if not df_prezzi.empty:
+        # Normalizzazione in base 100 partendo dal primo dato disponibile
         df_normalizzato = (df_prezzi / df_prezzi.iloc[0]) * 100
         st.line_chart(df_normalizzato)
         st.caption("Andamento degli ultimi 2 anni riscalato a base 100 per facilitare il confronto.")
     else:
-        st.info("Dati storici non disponibili.")
+        st.info("Attesa sincronizzazione dati storici.")
 
 with col_right:
     st.subheader("📊 Rischio vs Rendimento: Volatilità a Confronto")
-    # Mostriamo un grafico della volatilità delle aziende per dare un taglio quantitativo da Analyst
-    df_vol = df_fondamentali[['Azienda', 'Volatilità Ann. (%)']]
-    st.bar_chart(df_vol.set_index('Azienda'))
-    st.caption("Volatilità annualizzata calcolata sugli ultimi 2 anni. Più è alta, più il titolo è rischioso.")
+    # Filtro stringente per assicurarci che vengano passati solo dati numerici reali al grafico a barre
+    df_vol = df_fondamentali[df_fondamentali['Volatilità Ann. (%)'] > 0][['Azienda', 'Volatilità Ann. (%)']]
+    if not df_vol.empty:
+        st.bar_chart(df_vol.set_index('Azienda'))
+        st.caption("Volatilità annualizzata calcolata sugli ultimi 2 anni. Più è alta, più il titolo è rischioso.")
+    else:
+        st.info("Grafico della volatilità temporaneamente non disponibile.")
 
 st.divider()
 
