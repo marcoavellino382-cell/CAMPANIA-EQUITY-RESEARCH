@@ -1,10 +1,10 @@
-# 📊 Campania Equity Research
+# 📊 Campania Finance Dashboard
 
 Benvenuto nel repository ufficiale dell'**Osservatorio Finanziario delle Aziende della Campania**, un progetto sviluppato per lo **Starting Finance Club** universitario. 
 
 L'obiettivo di questo applicativo è monitorare in tempo reale le performance quantitative e i multipli fondamentali delle principali aziende quotate con un forte radicamento industriale e operativo nella Regione Campania.
 
-🚀 **[CLICCA QUI PER APRIRE LA DASHBOARD INTERATTIVA](INSERISCI_IL_LINK_DI_STREAMLIT_APPENA_LO_AVRAI)**
+🚀 **[CLICCA QUI PER APRIRE LA DASHBOARD INTERATTIVA]([)](https://campania-equity-research.streamlit.app/)**
 
 ---
 
