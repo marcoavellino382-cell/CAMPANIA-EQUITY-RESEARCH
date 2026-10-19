@@ -83,19 +83,42 @@ with col_right:
 
 st.divider()
 
-# --- SEZIONE 3: TABELLA DATI COMPLETA ---
-st.subheader("🗂️ Dettaglio Fondamentali")
-st.dataframe(df_fondamentali.set_index('Ticker'), use_container_width=True)
+# 1. Scarica i dati storici inclusa la componente di benchmark (FTSE MIB)
+@st.cache_data(ttl=3600)
+def load_historical_and_beta(tickers):
+    # Uniamo la watchlist all'indice di riferimento
+    tutti_i_tickers = tickers + ['FTSEMIB.MI']
+    prices = yf.download(tutti_i_tickers, period='2y')['Close']
+    
+    # Gestione multi-index per le nuove versioni di yfinance
+    if isinstance(prices.columns, pd.MultiIndex):
+        prices.columns = prices.columns.get_level_values(1)
+        
+    # Calcolo dei rendimenti giornalieri
+    rendimenti_df = prices.pct_change().dropna()
+    
+    # Isoliamo i rendimenti del benchmark
+    rendimenti_benchmark = rendimenti_df['FTSEMIB.MI']
+    varianza_benchmark = rendimenti_benchmark.var()
+    
+    dict_beta = {}
+    # Calcoliamo il Beta per ciascun titolo della nostra watchlist
+    for t in tickers:
+        if t in rendimenti_df.columns:
+            covarianza = rendimenti_df[t].cov(rendimenti_benchmark)
+            beta = covarianza / varianza_benchmark
+            dict_beta[t] = round(beta, 2)
+        else:
+            dict_beta[t] = np.nan
+            
+    return dict_beta
 
-# Bottone di download dei dati in CSV direttamente dalla dashboard
-csv = df_fondamentali.to_csv(index=False).encode('utf-8')
-st.download_button("📥 Scarica Report in CSV", data=csv, file_name="report_finanziario_campania.csv", mime="text/csv")
-
-# Scarica l'indice di riferimento insieme ai titoli
-benchmark = yf.download('FTSEMIB.MI', period='2y')['Close']
-rendimenti_benchmark = benchmark.pct_change().dropna()
-
-# Calcolo del Beta per ciascun titolo (da inserire nel loop dei ticker)
-varianza_mercato = rendimenti_benchmark.var()
-covarianza = rendimenti_titolo.cov(rendimenti_benchmark)
-beta = covarianza / varianza_mercato
+# 2. Chiamata alla funzione nel corpo principale di Streamlit
+# (Assicurati che 'tickers' sia la lista delle tue chiavi: ['DM.MI', 'DHH.MI', ...])
+try:
+    mappa_beta = load_historical_and_beta(tickers)
+    
+    # Se vuoi mappare i risultati dentro il tuo DataFrame principale 'df_fondamentali':
+    df_fondamentali['Beta (vs FTSE MIB)'] = df_fondamentali['Ticker'].map(mappa_beta)
+except Exception as e:
+    st.error(f"Errore nel calcolo del Beta: {e}")
