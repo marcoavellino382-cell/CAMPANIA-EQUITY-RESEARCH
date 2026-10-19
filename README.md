@@ -28,12 +28,6 @@ L'obiettivo di questo applicativo è monitorare in tempo reale le performance qu
 └── README.md            # Documentazione del progetto
 ```
 
-
-## 📈 Sviluppi Futuri (Roadmap)
-- [ ] Integrazione di una sezione Macroeconomica (Dati PIL ed Export Campania tramite dati Unioncamere/Regione).
-- [ ] Calcolo automatico del Coefficiente Beta rispetto al FTSE MIB.
-- [ ] Analisi del Sentiment basata sulle notizie finanziarie delle aziende in watchlist.
-
 ---
 ## 🧑‍💻 Autore
 * **Marco Avellino** - Financial Analyst* presso Starting Finance Club Suor Orsola 
